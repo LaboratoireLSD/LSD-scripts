@@ -490,6 +490,7 @@ def fetcher(args):
     jobId = ""
     projectName = ""
     projectPath = "/media/safe/Results"
+    configFile = "configs.tar.gz"
     create = False
     email = ""
     
@@ -578,14 +579,14 @@ def fetcher(args):
         
     if not active and not eligible and not blocked:
         #Simulation is done
-        
+        configFile = join(projectPath, projectName, configFile)
         try:            
             #Getting the project
             os.system("scp -r " + username + "@colosse.calculquebec.ca:" + join("/scratch", rapId, projectName) + " " + join(projectPath, projectName))
             #Set permission to group for reading
             os.system("find " + join(projectPath, projectName) + " -type f -exec chmod +r {} \;")
             #Move parameters in zip file
-            with tarfile.open('configs.tar.gz', mode='w:gz') as archive:
+            with tarfile.open(configFile, mode='w:gz') as archive:
                 archive.add(join(projectPath, projectName, "Environment"))
                 archive.add(join(projectPath, projectName, "Libraries"))
                 archive.add(join(projectPath, projectName, "Populations"))
@@ -596,7 +597,7 @@ def fetcher(args):
                         archive.add(join(projectPath, projectName, file))
             
         except:
-            print("An error has occurred while retreiving the results : " + str(sys.exc_info()[0]))
+            print("An error has occurred while retrieving the results : " + str(sys.exc_info()[0]))
         
         #Now that the simulation is done, we remove the cron job.
         cron = CronTab(user="lsdadmin")
