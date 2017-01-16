@@ -2,6 +2,7 @@ import subprocess
 import getopt
 import datetime
 import sys
+import os
 from os.path import join
 
 def showHelp():
@@ -16,10 +17,17 @@ def folderSize(folderName, metaFile):
     
     if not stdout:
         return
-        
+    
     for line in stdout.split("\n"):
         try:
             size, folder = line.split("\t")
+            
+            if os.path.isfile(join(folder, metaFile)):
+                with open(join(folder, metaFile)) as file:
+                    for line in file:
+                        if line.startswith("creation date:"):
+                            today = line.split(":")[1]
+                    
             with open(join(folder, metaFile), "w") as file:
                 file.write("size:" + size + "\n")
                 file.write("creation date:" + today + "\n")
