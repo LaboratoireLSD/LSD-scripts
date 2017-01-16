@@ -23,6 +23,8 @@ fetcherScript = "fetch"
 runnerScript = "run"
 runSimScript = os.path.basename(__file__)
 koksoakScriptLocation = "/home/lsdadmin/scripts/"
+colosseOutput = "colosse_output"
+metaFile = ".meta"
 
 """
 Shows help page for the launcher script.
@@ -225,16 +227,14 @@ def launcher(args):
     else:
         # 1 job for all
         nbTasks = 1
-    print(projectName)
-    print(projectPath)
-    sys.exit(1)
+    
     # Creating the folder that will contain colosse's outputs
-    if not os.path.exists(join(projectPath, "colosse_output")):
-        os.makedirs(join(projectPath, "colosse_output"))
+    if not os.path.exists(join(projectPath, colosseOutput)):
+        os.makedirs(join(projectPath, colosseOutput))
         
     homeUserPath += username
-    standardOutputFolder = join("/scratch", rapId, projectNameWithDatetime, "colosse_output")
-    errorOutputFolder = join("/scratch", rapId, projectNameWithDatetime, "colosse_output")
+    standardOutputFolder = join("/scratch", rapId, projectNameWithDatetime, colosseOutput)
+    errorOutputFolder = join("/scratch", rapId, projectNameWithDatetime, colosseOutput)
     #Submission script content
     submitScriptContent = ("#!/bin/bash\n"
                            "#PBS -A " + rapId + "\n" #Rap ID
@@ -344,7 +344,7 @@ def runner(args):
     def getNextHundred(number):
         return number if number % 100 == 0 else number + 100 - number % 100
             
-    metaFile = ".meta"
+    
     projectName = ""
     projectPath = ""
     advParameters = ""
@@ -481,6 +481,7 @@ def fetcher(args):
     import getopt
     import smtplib
     import tarfile
+    import shutil
     from email.mime.text import MIMEText
     from crontab import CronTab
     from os.path import join
@@ -578,23 +579,23 @@ def fetcher(args):
                 blocked = True
         
     if not active and not eligible and not blocked:
-        #Simulation is done
-        configFile = join(projectPath, projectName, configFile)
         try:            
             #Getting the project
             os.system("scp -r " + username + "@colosse.calculquebec.ca:" + join("/scratch", rapId, projectName) + " " + join(projectPath, projectName))
             #Set permission to group for reading
             os.system("find " + join(projectPath, projectName) + " -type f -exec chmod +r {} \;")
-            #Move parameters in zip file
-            with tarfile.open(configFile, mode='w:gz') as archive:
-                archive.add(join(projectPath, projectName, "Environment"))
-                archive.add(join(projectPath, projectName, "Libraries"))
-                archive.add(join(projectPath, projectName, "Populations"))
-                archive.add(join(projectPath, projectName, "Processes"))
-                archive.add(join(projectPath, projectName, "XSD"))
-                for file in os.listdir(join(projectPath, projectName)):
-                    if file.startswith("parameter"):
-                        archive.add(join(projectPath, projectName, file))
+            for root, subdirs, files in os.walk(join(projectPath, projectName)):
+                if "Environment" in subdirs and "Libraries" in subdirs and "Populations" in subdirs:
+                    #Move parameters in zip file
+                    with tarfile.open(join(root, configFile), mode='w:gz') as archive:
+                        for subdir in subdirs:
+                            if subdir != "Results" and subdir != "Analyse" and subdir != colosseOutput:
+                                archive.add(join(root, subdir), arcname=subdir)
+                                shutil.rmtree(join(root, subdir))
+                        for file in files:
+                            if file != metaFile:
+                                archive.add(join(root, file), arcname=file)
+                                os.remove(join(root, file))
             
         except:
             print("An error has occurred while retrieving the results : " + str(sys.exc_info()[0]))
