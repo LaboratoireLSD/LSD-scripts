@@ -42,7 +42,7 @@ def showHelpLauncher():
     print("     [-d, --duration <HH:MM:SS>]        Maximum duration of the simulation. Default = 24:00:00. Cannot exceed 48h")
     print("     [-o, --options <option>]           Options for SCHNAPS. See its doc for more information.")
     print("     [-h, --help]                       Shows the help page\n")
-    print("For help about the RSA key : http://doc.fedora-fr.org/wiki/SSH_:_Authentification_par_cl%C3%A9")
+    print("For help about the RSA key : https://docs.fedoraproject.org/en-US/Fedora/15/html/Deployment_Guide/s2-ssh-configuration-keypairs.html")
     
 """
 Shows help page for the fetcher script.
@@ -54,7 +54,7 @@ def showHelpFetcher():
     print("     -u, --username <name>              Username on Colosse for the ssh connection")
     print("     -p, --project <name>               Project's name")
     print("     -i, --id <job's id>                Job's id given by Colosse")
-    print("     [-e, --email <address@ulaval.ca>]  Person to join when the simulation is done")
+    print("     [-e, --email <address@ulaval.ca>]  Person to contact when the simulation is done")
     print("     [-c]                               Create a new cron job")
 
 """
@@ -69,7 +69,7 @@ def showHelpRunner():
     print("     -t, --task                         Index of the jobs' array. Represents the Xe job.")
     print("     -r, --rap-id                       Rap id.")
     print("     -s, --scenario                     List of scenarios splitted by the argument.")
-    print("     [-o, --options <option>]           Options for SCHNAPS. See its doc for more information.")
+    print("     [-o, --options <option>]           Options for SCHNAPS. For more information : https://github.com/audurand/schnaps/wiki/Usage.")
 
 """
 Shows the general help page.
@@ -80,12 +80,12 @@ def showHelpGeneral():
     print("Possible arguments :\n")
     
     print("     [" + launcherScript + ", " + fetcherScript + ", " + runnerScript + "]               Which mode to use. Must be the first argument. If omitted = " + launcherScript)
-    print("\n" + launcherScript + " :")
-    showHelpLauncher()
-    print("\n" + fetcherScript + " :")
-    showHelpFetcher()
     print("\n" + runnerScript + " :")
     showHelpRunner()
+    print("\n" + fetcherScript + " :")
+    showHelpFetcher()
+    print("\n" + launcherScript + " :")
+    showHelpLauncher()
 
 def main(args):
     if not args or args[0] in ["-h", "--help", "-help", "help"]:
@@ -105,7 +105,7 @@ def main(args):
 First script.
 Used by the user.
 It starts the chain by creating a job on the supercalculator, executing it and
-calling the 3rd script on the recieving server.
+calling the 3rd script on the receiving server.
 """        
 def launcher(args):
     import os, getopt, ntpath, re, time
@@ -219,10 +219,10 @@ def launcher(args):
         # 1 job per simulation (Ex. 5 scenarios with 100 simulations = 500 jobs)
         nbTasks = len(scenarios) * nbIterations
     elif mode == 2:
-        # 1 job per iteration
+        # 1 job per iteration (Ex. 5 scenarios with 100 iterations = 100 jobs)
         nbTasks = nbIterations
     elif mode == 3:
-        # 1 job per scenario
+        # 1 job per scenario (Ex. 5 scenarios with 100 iterations = 5 jobs)
         nbTasks = len(scenarios)
     else:
         # 1 job for all
@@ -323,6 +323,30 @@ def runner(args):
     import datetime
     import math
     from os.path import join, exists
+    
+    def getCreationTime(filePath): # NOT READY YET. ONLY WORKS WITH SUDO. NEED TO FIND ANOTHER WAY
+        inode = 0
+        partition = 0
+        
+        lsProc = subprocess.Popen(["ls", filePath, "-i"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = lsProc.communicate()
+        if not stdout:
+            print("Inode cannot be found for file : " + filePath)
+            return None
+        else:
+            inode = stdout.split(" ")[0]
+            
+        dfProc = subprocess.Popen(["df", "-T", filePath], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = dfProc.communicate()
+        for line in stdout.split("\n"):
+            if line.startswith("/"):
+                partition = line.split("\t")
+                
+        debugfsProc = subprocess.Popen(["debugfs", "-R", "'stat <" + str(inode) + ">'", partition], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = debugfsProc.communicate()
+        for line in stdout.split("\n"):
+            if line.startswith("crtime:"):
+                return line.split("--")[1].strip()
 
     def folderSize(folderName, metaFile):
         today = datetime.datetime.now().strftime("%d-%m-%Y")
@@ -331,10 +355,17 @@ def runner(args):
         
         if not stdout:
             return
-            
+        
         for line in stdout.split("\n"):
             try:
                 size, folder = line.split("\t")
+                
+                if os.path.isfile(join(folder, metaFile)):
+                    with open(join(folder, metaFile)) as file:
+                        for line in file:
+                            if line.startswith("creation date:"):
+                                today = line.split(":")[1]
+                        
                 with open(join(folder, metaFile), "w") as file:
                     file.write("size:" + size + "\n")
                     file.write("creation date:" + today + "\n")
@@ -444,7 +475,7 @@ def runner(args):
             if stderr:
                 print("Scenario " + scenario + " : " + stderr)
                 return
-    else:
+    elif mode == 4:
         # 1 job for all
         for scenario in scenarios:
             for j in range(0, iterations):
@@ -458,6 +489,8 @@ def runner(args):
                 if stderr:
                     print("Scenario " + scenario + " : " + stderr)
                     return
+    else:
+        print("Mode unsupported (" + str(mode) + "). See the help page for more information.")
     
     #Creates the metadata file in each directory of the project.
     #Do not modify the metadata's filename, unless you modify it also in the configuration file of Koksoak's website (/media/safe/www/html/conf.php)
