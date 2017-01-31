@@ -120,6 +120,7 @@ def launcher(args):
         print("Then, install pip with 'sudo apt-get install python-pip' and paramiko with 'sudo pip install paramiko'\n")
         sys.exit(1)
         
+    COLOSSE_RAM_PER_NODE_NORMAL = 24000 #In Mib, 8 x 3000. Would be adapted
     submitScriptName = "generated_submit.pbs"
     homeUserPath = "/home/"
     emailTo = ""
@@ -139,10 +140,11 @@ def launcher(args):
     now = time.strftime("%d-%m-%Y_%H-%M")
     log = False
     givenParameters = False
+    ramUsage = 0 #Expected memory consumption per job in Mib (1024Mib in 1 Gib)
     
     #Accepted arguments
     try:
-        options, arguments = getopt.getopt(args, "hlp:u:e:d:o:m:", ["help", "log", "project=", "username=", "email=", "duration=", "options=", "mode="])
+        options, arguments = getopt.getopt(args, "hlp:u:e:d:o:m:r:", ["help", "log", "project=", "username=", "email=", "duration=", "options=", "mode=", "ram="])
     except getopt.GetoptError as error:
         print (error)
         showHelpLauncher()
@@ -189,6 +191,8 @@ def launcher(args):
             mode = int(arg)
         elif (opt in ("-l", "--log")):
             log = True
+        elif (opt in ("-r", "--ram")):
+            ramUsage = int(arg)
     
     # Adding the log parameter
     if (givenParameters):
@@ -243,10 +247,14 @@ def launcher(args):
                            "#PBS -N " + projectName + "\n" #Job's name
                            "#PBS -o " + standardOutputFolder + "/" + projectName + "_%I.out\n" #Standard output
                            "#PBS -e " + errorOutputFolder + "/" + projectName + "_%I.err\n" #Error output
-                           "#PBS -t [0-" + str(nbTasks) + "]%100\n" # Array of jobs. Max 50 jobs at the same time. Can be anything else than 50 (don't know the max)
+                           "#PBS -t [0-" + str(nbTasks) + "]%50\n" # Array of jobs. Max 50 jobs at the same time. Can be anything else than 50 (don't know the max)
+                           )
                            
-                           "python " + runSimScript + " " + runnerScript + " -p " + projectNameWithDatetime + " -m " + str(mode) + " -t $MOAB_JOBARRAYINDEX -i " + str(nbIterations) + scenariosToString + advParameters + " -r " + rapId + "\n" #Executing the 2nd script
-                        )
+    if (ramUsage >= COLOSSE_RAM_PER_NODE_NORMAL):
+        submitScriptContent += "#PBS -l feature='48g'\n"#Add option to use the high memory queues
+        
+    submitScriptContent += "python " + runSimScript + " " + runnerScript + " -p " + projectNameWithDatetime + " -m " + str(mode) + " -t $MOAB_JOBARRAYINDEX -i " + str(nbIterations) + scenariosToString + advParameters + " -r " + rapId + "\n" #Executing the 2nd script
+                        
     
     print("Connection to Colosse by ssh.")
     ssh = paramiko.SSHClient()
