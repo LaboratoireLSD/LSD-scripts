@@ -5,9 +5,9 @@ This script remove the Output and Summary files that have a number higher or equ
 This is to make sure all analysed output have the same amount of repetitions.
 """
 
-import os
+import os, sys
 
-remove_ge = 97
+remove_ge = int(sys.argv[1])
 files_amount = 100
 
 for subdir, dirs, files in os.walk("."):

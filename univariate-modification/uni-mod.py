@@ -43,7 +43,8 @@ def uni_mod(args):
 
 
         # Do a grep to find the list of file to modify
-        subproc_grep = subprocess.Popen(["grep", "-rl", "Entry label=\"" + parameter + "\"", target_folder], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subproc_grep = subprocess.Popen(["grep", "-rl", "Entry label=\"" + parameter + "\"", target_folder],
+                                        shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         file_name_raw, null = subproc_grep.communicate()
         file_name_str = []
         file_name_1 = file_name_raw.decode().split("\n")
