@@ -561,7 +561,7 @@ def fetcher(args):
         elif (opt in ("-c", "--create")):
             create = True
         elif (opt in ("-e", "--email")):
-            email = arg
+            email =  " -e " + arg
     
     if not username or not jobId or not projectName:
         #Username, project's name and job's id are required
@@ -572,7 +572,7 @@ def fetcher(args):
         #Creates a cron job
         try:
             cron = CronTab(user="lsdadmin")
-            cronJob = cron.new("/usr/bin/python " + koksoakScriptLocation + runSimScript + " " + fetcherScript + " -u " + username + " -i " + jobId + " -p " + projectName + " -e " + email, comment=jobId)
+            cronJob = cron.new("/usr/bin/python " + koksoakScriptLocation + runSimScript + " " + fetcherScript + " -u " + username + " -i " + jobId + " -p " + projectName + email, comment=jobId)
             cronJob.minute.every(15)
             cron.write()
             print("Cron job with job id " + jobId + " created successfully")
