@@ -10,10 +10,9 @@ This script let a user change the values of the configuration files produced by 
 It can be useful when we want to have univariate simulation but want to tie multiple values together.
 """
 
-import sys
-import subprocess
 import re
-
+import subprocess
+import sys
 
 
 def show_help_general():
@@ -31,7 +30,6 @@ def extract_configs(config_file):
     return result
 
 
-
 def uni_mod(args):
     import mmap
     target_folder = args[0]
@@ -41,10 +39,8 @@ def uni_mod(args):
 
     for param_pair in config_array:
         parameter, value = param_pair.split(":")
-        grep_args = "grep -rl 'Entry label=\"" + parameter + "\"' " + target_folder
+
         xml_parameter = "Entry label=\"" + parameter + "\""
-
-
 
         # Do a grep to find the list of file to modify
         subproc_grep = subprocess.Popen(["grep", "-rl", xml_parameter, target_folder],
@@ -57,16 +53,15 @@ def uni_mod(args):
                 file = open(file_path)
                 file_str = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
                 index = file_str.find(xml_parameter.encode('utf-8'))
-                substr = file_str[index:index+120]
+                substr = file_str[index:index + 120]
                 pattern = re.compile(b'="\d+\.?\d*"')
                 regex_span_found = pattern.search(substr).span()
-                length_span = regex_span_found[1]-regex_span_found[0]
+                length_span = regex_span_found[1] - regex_span_found[0]
                 number_index = regex_span_found[0] + index
                 file.close()
                 file = open(file_path, "r+b")
 
                 file.seek(number_index)
-                # print(file.read(40))
                 file.seek(number_index + 2)
                 str2 = b'"/>\n'
                 if len(value) < length_span:
@@ -74,9 +69,7 @@ def uni_mod(args):
                 else:
                     file.write(value.encode() + str2)
                 file.seek(number_index)
-                # print(file.read(40))
                 file.close()
-
 
 
 def main(args):
@@ -87,5 +80,6 @@ def main(args):
     else:
         uni_mod(args)
         sys.exit(0)
+
 
 main(sys.argv[1:])
