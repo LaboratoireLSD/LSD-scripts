@@ -514,7 +514,7 @@ def runner(args):
     hours = 0
     if minutes >= 60:
         hours = int(math.ceil(minutes / 60))
-        minutes = int(minutes - (minutes * hours))
+        minutes = int(minutes - (60 * hours))
     print("Total time of job (HH:MM:SS) : " + str(hours) + ":" + str(minutes) + ":" + str(seconds))
     
 def fetcher(args):
@@ -534,7 +534,7 @@ def fetcher(args):
     projectPath = "/media/safe/Results"
     configFile = "configs.tar.gz"
     create = False
-    email = ""
+    emailTo = ""
     
     try:
         options, arguments = getopt.getopt(args, "hcu:i:p:e:", ["help", "create", "username=", "id=", "project=", "email="])
@@ -561,7 +561,7 @@ def fetcher(args):
         elif (opt in ("-c", "--create")):
             create = True
         elif (opt in ("-e", "--email")):
-            email =  " -e " + arg
+            emailTo =  " -e " + arg
     
     if not username or not jobId or not projectName:
         #Username, project's name and job's id are required
@@ -572,7 +572,7 @@ def fetcher(args):
         #Creates a cron job
         try:
             cron = CronTab(user="lsdadmin")
-            cronJob = cron.new("/usr/bin/python " + koksoakScriptLocation + runSimScript + " " + fetcherScript + " -u " + username + " -i " + jobId + " -p " + projectName + email, comment=jobId)
+            cronJob = cron.new("/usr/bin/python " + koksoakScriptLocation + runSimScript + " " + fetcherScript + " -u " + username + " -i " + jobId + " -p " + projectName + emailTo, comment=jobId)
             cronJob.minute.every(15)
             cron.write()
             print("Cron job with job id " + jobId + " created successfully")
@@ -648,17 +648,17 @@ def fetcher(args):
         print("Cron job with job id " + jobId + " removed successfully")
         
         #Sending an email to the user
-        if email:
+        if emailTo:
             try:
                 server = "smtp.ulaval.ca"
     
                 msg = MIMEText("Simulation called '" + projectName + "' is done and now on Koksoak")
                 msg["Subject"] = "Simulation '" + projectName + "' is done"
                 msg["From"] = "no-reply@ulaval.ca"
-                msg["To"] = email
+                msg["To"] = emailTo
                 
                 smtp = smtplib.SMTP(server)
-                smtp.sendmail("no-reply@ulaval.ca", [email], msg.as_string())
+                smtp.sendmail("no-reply@ulaval.ca", [emailTo], msg.as_string())
                 smtp.quit()
             except:
                 print("Email not send. Error occurred :", sys.exc_info()[0])
