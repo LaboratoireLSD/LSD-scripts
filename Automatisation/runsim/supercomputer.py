@@ -58,9 +58,10 @@ class ComputeServer:
         self.nb_tasks = '0'
         self.job_id = ''
         self.nb_cpu = 1
+        self.group_space = '/rap/' + self.rap_id
 
         # systems available for use
-        self.systems = ["colosse", "guillimin", "cedar", "graham"]
+        self.systems = ["colosse", "cedar", "graham"]
 
         # Parsing the options
         for opt, arg in kwargs.items():
@@ -89,9 +90,6 @@ class ComputeServer:
         if self.name == 'colosse':
             return Colosse(self.username, self.project_name, self.project_name_with_datetime, self.nb_tasks,
                            self.duration, self.ram_usage)
-        elif self.name == 'guillimin':
-            return Guillimin(self.username, self.project_name, self.project_name_with_datetime, self.nb_tasks,
-                             self.duration)
         elif self.name == 'cedar':
             return Cedar(self.username, self.project_name, self.project_name_with_datetime, self.nb_tasks,
                          self.duration, self.ram_usage)
@@ -161,9 +159,6 @@ class CalculQuebec(ComputeServer):
         if self.name == 'colosse':
             self.scratch_folder = os.path.join("/scratch", self.rap_id, project_name_with_datetime)
             self.login_node = self.name + ".calculquebec.ca"
-        elif self.name == 'guillimin':
-            self.scratch_folder = os.path.join("/gs/scratch", self.username, project_name_with_datetime)
-            self.login_node = self.name + ".calculquebec.ca"
 
         self.output_folder = os.path.join(self.scratch_folder, self.name + '_output')
         self.error_folder = self.output_folder
@@ -201,14 +196,13 @@ class Colosse(CalculQuebec):
         # Submission script content
         self.script_content = ('#!/bin/bash\n'
                                '#PBS -N ' + self.project_name + '\n'  # Job\'s name
-                             #  '#PBS -q qwork@mp2' + '\n'
                                '#PBS -l walltime=' + self.duration + '\n'  # Max duration HH:MM:SS
-                               '#PBS -o ' + self.output_folder + '/' + self.project_name + '_%I.out\n' # Standard output  
-                               '#PBS -e ' + self.error_folder + '/' + self.project_name + '_%I.err\n'# Error output
+                               '#PBS -o ' + self.output_folder + '/' + self.project_name + '_%I.out\n'  # Standard output  
+                               '#PBS -e ' + self.error_folder + '/' + self.project_name + '_%I.err\n'  # Error output
                                '#PBS -A ' + self.rap_id + '\n'  # Rap ID
                                '#PBS -l nodes=1:ppn=8\n'  # Total nodes and hearts
                                )
-        if int(self.nb_tasks) > 1:  # mode 1
+        if int(self.nb_tasks) >= 1:  # mode 1
             self.script_content += '#PBS -t 0-' + self.nb_tasks + '\n'  # Array of jobs.
         self.script_content += 'module load apps/python/3.5.0\npython3 '  # Loads python 3 version
 
@@ -245,46 +239,6 @@ class Colosse(CalculQuebec):
         if not active and not eligible and not blocked:
             return True
 
-
-class Guillimin(CalculQuebec):
-    def __init__(self, username, project_name, project_name_with_datetime, nb_tasks, duration):
-        super().__init__("guillimin", username, project_name, project_name_with_datetime, nb_tasks)
-
-        self.command_job_submission = "qsub "
-        self.command_job_status = "qstat -u " + username + "\n"
-        self.task_job_array = "PBS_ARRAYID"
-
-        # Acceptable time format "days:hours:minutes:seconds" (cannot exceed 30 days)
-        try:
-            if duration == "":
-                self.duration = "24:00:00"
-            if re.match("([0-9]+):([0-5][0-9]):([0-5][0-9])", duration):
-                self.duration = duration
-        except:
-            print("Duration must be HH:MM:SS or DD:HH:MM:SS (max 30 days)\n")
-            sys.exit(1)
-
-    def create_submission_script(self):
-        self.script_content = ('#!/bin/bash\n'
-                               '#PBS -A ' + self.rap_id + '\n'  # Rap ID
-                               '#PBS -l walltime=' + self.duration + '\n'  # Max duration HH:MM:SS
-                               '#PBS -N ' + self.project_name + '\n'  # Job\'s name
-                               '#PBS -o ' + self.output_folder + '/' + self.project_name + '_out\n'  # Standard output
-                               '#PBS -e ' + self.error_folder + '/' + self.project_name + '_err\n')  # Error output
-        if int(self.nb_tasks) > 1:  # mode 1
-            self.script_content += '#PBS -t 0-' + self.nb_tasks + '\n'  # Array of jobs.
-
-        self.script_content += ('#PBS -l nodes=1:ppn=4\n'  # Total nodes and hearts
-                                'module load python/3.3.2\npython3 ')  # Loads python 3 version
-
-    def get_job_id(self, stout_read):
-        self.job_id = ''
-        for n in stout_read[0]:
-            if str.isdigit(str(n)):
-                self.job_id = self.job_id + str(n)
-            else:
-                break
-
     @staticmethod
     def get_job_status(output, job_id):
         if not output:
@@ -316,6 +270,7 @@ class NationalSystem(ComputeServer):
         self.nb_tasks = nb_tasks
         self.home_path = os.path.join("/home" + self.username)
         self.schnaps_path = os.path.join(self.home_path + "project/init/bin/schnaps")
+        self.group_space = '/project/' + self.account
 
         if ram_usage != str(0):
             # Minimum required memory for the job, in MB.
@@ -354,16 +309,16 @@ class NationalSystem(ComputeServer):
                                '#SBATCH --job-name=' + self.project_name + '\n'
 
                                # Standard output. "%A" for job ID and "%a for array index
-                                '#SBATCH -o ' + self.output_folder + '/' + self.project_name + '_%A_%a.out\n'
+                               '#SBATCH -o ' + self.output_folder + '/' + self.project_name + '_%A_%a.out\n'
 
                                # Standard error      
-                                '#SBATCH -e ' + self.error_folder + '/' + self.project_name + '_%A_%a.err\n'
+                               '#SBATCH -e ' + self.error_folder + '/' + self.project_name + '_%A_%a.err\n'
 
-                                '#SBATCH --mem-per-cpu=' + self.ram_usage + "Mn\n" +
-                                '#SBATCH --ntasks=1\n' +
-                                '#SBATCH --cpus-per-task=2\n')
+                               '#SBATCH --mem-per-cpu=' + self.ram_usage + "Mn\n" +
+                               '#SBATCH --ntasks=1\n' +
+                               '#SBATCH --cpus-per-task=2\n')
 
-        if int(self.nb_tasks) > 1:  # mode 1
+        if int(self.nb_tasks) >= 1:  # mode 1
             self.script_content += '#SBATCH --array=0-' + self.nb_tasks + '\n'
 
         self.script_content += ('module load python/3.6\n' + 'python')

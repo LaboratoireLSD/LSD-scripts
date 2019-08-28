@@ -72,8 +72,9 @@ class Launcher:
         self.given_parameters = False
         self.ram_usage = 0  # Expected memory consumption per job in Mib (1024Mib in 1 Gib)
         self.server_name = 'colosse'
-        self.scratch_path = ""
-        self.whole_node = True
+        self.scratch_path = ''
+        self.submit_script_content = ''
+
         self.check_paramiko()
         self.parse_args(args)
         self.add_log_parameter()
@@ -107,7 +108,7 @@ class Launcher:
                                       ' -i ' + str(self.nb_iterations) +
                                       self.scenarios_to_string + self.adv_parameters +
                                       ' -d ' + self.scratch_path)  # Executing the 2nd script
-        if int(self.supercomputer.nb_tasks) > 1:
+        if int(self.supercomputer.nb_tasks) >= 1:
             self.submit_script_content += ' -t $' + self.supercomputer.task_job_array
         count += 1
 
@@ -116,7 +117,6 @@ class Launcher:
         ssh = self.supercomputer.connect_ssh()
         print("Sending the project folder to : " + self.username + "@" + self.supercomputer.login_node + ":" +
               self.supercomputer.scratch_folder)
-        print(self.home_user_path)
         os.system("scp -r " + self.project_path + "/ " + self.username + "@" + self.supercomputer.login_node + ":" +
                   self.supercomputer.scratch_folder + "/")
         ssh.close()
@@ -171,16 +171,17 @@ class Launcher:
         ssh = self.supercomputer.connect_ssh()
 
         print("Generating the submit script on " + self.server_name + ".")
-        ssh.exec_command("echo '" + submit_script_content + "' > " + join(self.home_user_path,
+        ssh.exec_command("echo '" + submit_script_content + "' > " + join(self.supercomputer.group_space + '/scripts/',
                                                                           self.supercomputer.submit_script_name) + "\n")
 
-        print("Sending script to user's home folder.")
+        print("Sending script to user's group project/script folder.")
         os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
-                  self.supercomputer.login_node + ":" + self.home_user_path)
+                  self.supercomputer.login_node + ":" + self.supercomputer.group_space + '/scripts/')
 
         print("Launching the submit script.")
-        stin, stout, sterr = ssh.exec_command(self.supercomputer.command_job_submission +
-                                              join(self.home_user_path, self.supercomputer.submit_script_name) + "\n")
+        stin, stout, sterr = ssh.exec_command('cd ' + self.supercomputer.group_space + '/scripts\n' +
+                                              self.supercomputer.command_job_submission +
+                                              self.supercomputer.submit_script_name + "\n")
         sterr_read = sterr.readlines()  # If ssh returns an error
         stout_read = stout.readlines()  # If the ssh returns a normal output
 
@@ -197,12 +198,6 @@ class Launcher:
                 print(str(stout_read))
                 print("Couldn't get the job's id. Exiting without creating a cron job on Koksoak.")
                 sys.exit(1)
-
-        # copy submit script to output folder
-        ssh.exec_command("echo '" + submit_script_content + "' > " + join(self.supercomputer.scratch_folder,
-                                                                          self.supercomputer.output_folder,
-                                                                          str(self.supercomputer.job_id) + "_" +
-                                                                          self.supercomputer.submit_script_name) + "\n")
         ssh.close()
 
     def collect_script(self):
@@ -256,7 +251,7 @@ class Launcher:
             options, arguments = getopt.getopt(args, "hlp:u:s:d:e:o:m:r:",
                                                ["help", "log", "project=", "username=", "compute-server=", "duration=",
                                                 "email=""options=", "mode=", "ram="])
-        except getopt.GetoptError as error:
+        except getopt.GetoptError:
             show_help_launcher()
             sys.exit(1)
 
