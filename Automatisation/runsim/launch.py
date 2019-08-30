@@ -219,8 +219,7 @@ class Launcher:
         print("Creating a cron job on Koksoak.\n")
 
         # Executing the 3rd script
-        stin, stout, sterr = ssh.exec_command('python3 ' + join(self.koksoak_script_location, "runsim", "main.py") +
-                                              " fetch" +
+        stin, stout, sterr = ssh.exec_command('python3 ' + self.koksoak_script_location + "/runsim/main.py fetch" +
                                               ' -u ' + self.supercomputer.username +
                                               ' -i ' + self.supercomputer.job_id +
                                               ' -p ' + self.supercomputer.project_name_with_datetime +

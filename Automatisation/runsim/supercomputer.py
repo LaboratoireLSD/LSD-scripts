@@ -157,10 +157,10 @@ class CalculQuebec(ComputeServer):
         self.nb_tasks = str(nb_tasks)
 
         if self.name == 'colosse':
-            self.scratch_folder = os.path.join("/scratch", self.rap_id, project_name_with_datetime)
+            self.scratch_folder = "/scratch/" + self.rap_id + "/" + project_name_with_datetime
             self.login_node = self.name + ".calculquebec.ca"
 
-        self.output_folder = os.path.join(self.scratch_folder, self.name + '_output')
+        self.output_folder = self.scratch_folder + "/" + self.name + '_output'
         self.error_folder = self.output_folder
 
     def get_job_id(self, stout_read):
@@ -259,17 +259,17 @@ class NationalSystem(ComputeServer):
                          project_name_with_datetime=project_name_with_datetime)
 
         self.login_node = self.name + ".computecanada.ca"
-        self.scratch_folder = os.path.join("/scratch", self.username, project_name_with_datetime)
-        self.output_folder = os.path.join(self.scratch_folder, self.name + '_output')
-        self.error_folder = os.path.join(self.scratch_folder, self.name + '_output')
+        self.scratch_folder = "/scratch/" + self.username + "/" + project_name_with_datetime
+        self.output_folder = self.scratch_folder + "/" + self.name + '_output'
+        self.error_folder = self.scratch_folder + "/" + self.name + '_output'
         self.command_job_submission = "sbatch "
         self.command_job_status = "squeue -u " + self.username + "\n"
         self.task_job_array = "SLURM_ARRAY_TASK_ID"
         self.submit_script_name = "generated_submit.sbatch"
         self.ram_usage = "15000"
         self.nb_tasks = nb_tasks
-        self.home_path = os.path.join("/home" + self.username)
-        self.schnaps_path = os.path.join(self.home_path + "project/init/bin/schnaps")
+        self.home_path = "/home/" + self.username
+        self.schnaps_path = self.home_path + "/project/init/bin/schnaps"
         self.group_space = '/project/' + self.account
 
         if ram_usage != str(0):
