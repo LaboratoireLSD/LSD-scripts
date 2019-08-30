@@ -174,12 +174,12 @@ class Launcher:
 
         ssh.exec_command("echo '" + submit_script_content + "' > " + join(self.supercomputer.group_space + '/scripts/',
                                                                           self.supercomputer.submit_script_name) + "\n")
-        print("Sending script to user's group project/script folder.")
-        os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
-                  self.supercomputer.login_node + ":" + self.supercomputer.group_space + '/scripts/')
+        # print("Sending script to user's group project/script folder.")
+        # os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
+        #           self.supercomputer.login_node + ":" + self.supercomputer.group_space + '/scripts/')
         ssh.exec_command("chmod g+rwx " + join(self.supercomputer.group_space + '/scripts/',
-                                               self.supercomputer.submit_script_name) + " " +
-                         join(self.supercomputer.group_space + '/scripts/run.py' + "\n"))
+                                               self.supercomputer.submit_script_name) + "\n")
+        #                  join(self.supercomputer.group_space + '/scripts/run.py' + "\n"))
         print("Launching the submit script.")
         stin, stout, sterr = ssh.exec_command('cd ' + self.supercomputer.group_space + '/scripts\n' +
                                               self.supercomputer.command_job_submission +
