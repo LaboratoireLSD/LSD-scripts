@@ -102,7 +102,7 @@ class Launcher:
         self.scratch_path = self.supercomputer.scratch_folder
         self.supercomputer.create_submission_script()
         self.submit_script_content = (self.supercomputer.script_content + " " +
-                                      join(os.path.dirname(self.supercomputer.scratch_folder), self.run_sim_script) +
+                                      join(self.supercomputer.submission_script_dir, self.run_sim_script) +
                                       " " + self.runner_script +
                                       ' -p ' + self.supercomputer.project_name_with_datetime +
                                       ' -m ' + str(self.mode) +
@@ -119,7 +119,7 @@ class Launcher:
         ssh = self.supercomputer.connect_ssh()
         print("Sending the project folder to : " + self.username + "@" + self.supercomputer.login_node + ":" +
               self.supercomputer.scratch_folder)
-        os.system("scp -r " + self.project_path + "/ " + self.username + "@" + self.supercomputer.login_node + ":" +
+        os.system("scp -r " + self.project_path + " " + self.username + "@" + self.supercomputer.login_node + ":" +
                   self.supercomputer.scratch_folder)
         ssh.close()
 
@@ -175,14 +175,14 @@ class Launcher:
         print("Generating the submit script on " + self.server_name + ".")
 
         ssh.exec_command("echo '" + submit_script_content + "' > " +
-                         join(os.path.dirname(self.supercomputer.scratch_folder),
+                         join(self.supercomputer.submission_script_dir,
                               self.supercomputer.submit_script_name) + "\n")
-        print("Sending script to user's scratch folder.")
+        print("Sending script to " + self.supercomputer.submission_script_dir)
         os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
-                  self.supercomputer.login_node + ":" + os.path.dirname(self.supercomputer.scratch_folder))
+                  self.supercomputer.login_node + ":" + self.supercomputer.submission_script_dir)
 
         print("Launching the submit script.")
-        stin, stout, sterr = ssh.exec_command('cd ' + os.path.dirname(self.supercomputer.scratch_folder) + '\n' +
+        stin, stout, sterr = ssh.exec_command('cd ' + self.supercomputer.submission_script_dir + '\n' +
                                               self.supercomputer.command_job_submission +
                                               self.supercomputer.submit_script_name + "\n")
         sterr_read = sterr.readlines()  # If ssh returns an error

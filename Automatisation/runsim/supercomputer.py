@@ -59,6 +59,7 @@ class ComputeServer:
         self.job_id = ''
         self.nb_cpu = 1
         self.group_space = '/rap/' + self.rap_id
+        self.submission_script_dir = '/home/'
 
         # systems available for use
         self.systems = ["colosse", "cedar", "graham", "beluga"]
@@ -158,6 +159,7 @@ class CalculQuebec(ComputeServer):
 
         self.submit_script_name = "generated_submit.pbs"
         self.nb_tasks = str(nb_tasks)
+        self.submission_script_dir += self.username
 
         if self.name == 'colosse':
             self.scratch_folder = "/scratch/" + self.rap_id + "/" + project_name_with_datetime
@@ -274,6 +276,7 @@ class NationalSystem(ComputeServer):
         self.home_path = "/home/" + self.username
         self.schnaps_path = self.home_path + "/project/init/bin/schnaps"
         self.group_space = '/project/' + self.account
+        self.submission_script_dir += self.username + "/scratch"
 
         if ram_usage != str(0):
             # Minimum required memory for the job, in MB.
