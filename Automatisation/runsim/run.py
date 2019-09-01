@@ -52,6 +52,7 @@ def runner(args):
     project_name = ""
     scratch_path = ""
     adv_parameters = ""
+    schnaps = "schnaps"
     scenarios = []
     mode = 0
     task = 0  # Running task. Equivalent of the index in the jobs' list
@@ -59,9 +60,9 @@ def runner(args):
     start_job = datetime.datetime.now()
 
     try:
-        options, arguments = getopt.getopt(args, "p:m:t:i:s:o:d:",
+        options, arguments = getopt.getopt(args, "p:m:t:i:s:o:d:e:",
                                            ["project=", "mode=", "task=", "iterations=", "scenario=", "options=",
-                                            "scratch-path="])
+                                            "scratch-path=", "server="])
     except getopt.GetoptError as error:
         print(error)
         sys.exit(1)
@@ -81,6 +82,12 @@ def runner(args):
             iterations = arg
         elif opt in ("-d", "--scratch_path"):
             scratch_path = arg
+        elif opt in ("-e", "--server"):
+            if arg == "colosse":
+                schnaps = "/rap/wny-790-aa/bin/schnaps"
+            elif arg in ["cedar", "graham", "beluga"]:
+                schnaps = "/project/def-reinharz/init/bin/schnaps"
+
     # Required fields
     # if not project_name or not mode or not rap_id or task < 0 or not scenarios or not iterations:
     if not project_name or not mode or not scenarios or not iterations and (mode != 4 and task < 0):
@@ -110,7 +117,7 @@ def runner(args):
         iteration = str(task % (int(iterations) + 1))
         config_file = "parameters_" + iteration + ".xml"
         output_prefix = "Results/" + scenario + "/" + iteration + "_"
-        proc = subprocess.Popen(["schnaps", "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
+        proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
                                  "print.prefix=" + output_prefix + adv_parameters], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
@@ -126,7 +133,7 @@ def runner(args):
         for scenario in scenarios:
             config_file = "parameters_" + str(task) + ".xml"
             output_prefix = "Results/" + scenario + "/" + str(task) + "_"
-            proc = subprocess.Popen(["schnaps", "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
+            proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
                                      "print.prefix=" + output_prefix, adv_parameters], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -143,7 +150,7 @@ def runner(args):
             scenario = scenarios[task]
             config_file = "parameters_" + str(i) + ".xml"
             output_prefix = "Results/" + scenario + "/" + str(i) + "_"
-            proc = subprocess.Popen(["schnaps", "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
+            proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
                                      "print.prefix=" + output_prefix + adv_parameters], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -157,7 +164,7 @@ def runner(args):
         def mode4():
             config_file = "parameters_" + str(j) + ".xml"
             output_prefix = "Results/" + scenario + "/" + str(j) + "_"
-            proc = subprocess.Popen(["schnaps", "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
+            proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
                                      "print.prefix=" + output_prefix + adv_parameters], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
 

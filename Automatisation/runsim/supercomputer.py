@@ -61,7 +61,7 @@ class ComputeServer:
         self.group_space = '/rap/' + self.rap_id
 
         # systems available for use
-        self.systems = ["colosse", "cedar", "graham"]
+        self.systems = ["colosse", "cedar", "graham", "beluga"]
 
         # Parsing the options
         for opt, arg in kwargs.items():
@@ -95,6 +95,9 @@ class ComputeServer:
                          self.duration, self.ram_usage)
         elif self.name == 'graham':
             return Graham(self.username, self.project_name, self.project_name_with_datetime, self.nb_tasks,
+                          self.duration, self.ram_usage)
+        elif self.name == 'beluga':
+            return Beluga(self.username, self.project_name, self.project_name_with_datetime, self.nb_tasks,
                           self.duration, self.ram_usage)
 
     def connect_ssh(self):
@@ -344,4 +347,10 @@ class Cedar(NationalSystem):
 class Graham(NationalSystem):
     def __init__(self, username, project_name, project_name_with_datetime, nb_tasks, duration, mem_req):
         super().__init__("graham", username, project_name, project_name_with_datetime, nb_tasks, duration, mem_req)
+        self.nb_cpu = 32
+
+
+class Beluga(NationalSystem):
+    def __init__(self, username, project_name, project_name_with_datetime, nb_tasks, duration, mem_req):
+        super().__init__("beluga", username, project_name, project_name_with_datetime, nb_tasks, duration, mem_req)
         self.nb_cpu = 32

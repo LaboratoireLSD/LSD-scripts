@@ -101,13 +101,15 @@ class Launcher:
         count = 1
         self.scratch_path = self.supercomputer.scratch_folder
         self.supercomputer.create_submission_script()
-        self.submit_script_content = (self.supercomputer.script_content + " " + self.run_sim_script + " " +
-                                      self.runner_script +
+        self.submit_script_content = (self.supercomputer.script_content + " " +
+                                      join(os.path.dirname(self.supercomputer.scratch_folder), self.run_sim_script) +
+                                      " " + self.runner_script +
                                       ' -p ' + self.supercomputer.project_name_with_datetime +
                                       ' -m ' + str(self.mode) +
                                       ' -i ' + str(self.nb_iterations) +
                                       self.scenarios_to_string + self.adv_parameters +
-                                      ' -d ' + self.scratch_path)  # Executing the 2nd script
+                                      ' -d ' + self.scratch_path +
+                                      ' -e ' + self.supercomputer.name)  # Executing the 2nd script
         if int(self.supercomputer.nb_tasks) >= 1:
             self.submit_script_content += ' -t $' + self.supercomputer.task_job_array
         count += 1
@@ -118,7 +120,7 @@ class Launcher:
         print("Sending the project folder to : " + self.username + "@" + self.supercomputer.login_node + ":" +
               self.supercomputer.scratch_folder)
         os.system("scp -r " + self.project_path + "/ " + self.username + "@" + self.supercomputer.login_node + ":" +
-                  self.supercomputer.scratch_folder + "/")
+                  self.supercomputer.scratch_folder)
         ssh.close()
 
     def get_nb_jobs(self):
@@ -172,16 +174,15 @@ class Launcher:
 
         print("Generating the submit script on " + self.server_name + ".")
 
-        ssh.exec_command("echo '" + submit_script_content + "' > " + join(self.supercomputer.group_space + '/scripts/',
-                                                                          self.supercomputer.submit_script_name) + "\n")
-        # print("Sending script to user's group project/script folder.")
-        # os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
-        #           self.supercomputer.login_node + ":" + self.supercomputer.group_space + '/scripts/')
-        ssh.exec_command("chmod g+rwx " + join(self.supercomputer.group_space + '/scripts/',
-                                               self.supercomputer.submit_script_name) + "\n")
-        #                  join(self.supercomputer.group_space + '/scripts/run.py' + "\n"))
+        ssh.exec_command("echo '" + submit_script_content + "' > " +
+                         join(os.path.dirname(self.supercomputer.scratch_folder),
+                              self.supercomputer.submit_script_name) + "\n")
+        print("Sending script to user's scratch folder.")
+        os.system("scp " + join(dirname(realpath(__file__)), "run.py") + " " + self.username + "@" +
+                  self.supercomputer.login_node + ":" + os.path.dirname(self.supercomputer.scratch_folder))
+
         print("Launching the submit script.")
-        stin, stout, sterr = ssh.exec_command('cd ' + self.supercomputer.group_space + '/scripts\n' +
+        stin, stout, sterr = ssh.exec_command('cd ' + os.path.dirname(self.supercomputer.scratch_folder) + '\n' +
                                               self.supercomputer.command_job_submission +
                                               self.supercomputer.submit_script_name + "\n")
         sterr_read = sterr.readlines()  # If ssh returns an error

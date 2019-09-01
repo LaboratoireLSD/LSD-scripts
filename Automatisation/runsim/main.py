@@ -77,5 +77,5 @@ def main(args):
     else:
         Launcher(args)
 
-
+#main(['-p', '/home/joice/Downloads/test', '-u', 'joicek', '-d', '00:05:00', '-s', 'cedar'])
 main(sys.argv[1:])
