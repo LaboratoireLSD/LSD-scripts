@@ -206,9 +206,7 @@ class Colosse(CalculQuebec):
                                '#PBS -e ' + self.error_folder + '/' + self.project_name + '_%I.err\n'  # Error output
                                '#PBS -A ' + self.rap_id + '\n'  # Rap ID
                                '#PBS -l nodes=1:ppn=8\n'  # Total nodes and hearts
-                               )
-        if int(self.nb_tasks) >= 1:  # mode 1
-            self.script_content += '#PBS -t 0-' + self.nb_tasks + '\n'  # Array of jobs.
+                               '#PBS -t 0-' + self.nb_tasks + '\n')  # Array of jobs.
         self.script_content += 'module load apps/python/3.5.0\npython3 '  # Loads python 3 version
 
     def get_job_id(self, stout_read):
@@ -322,10 +320,8 @@ class NationalSystem(ComputeServer):
 
                                '#SBATCH --mem-per-cpu=' + self.ram_usage + "Mn\n" +
                                '#SBATCH --ntasks=1\n' +
-                               '#SBATCH --cpus-per-task=2\n')
-
-        if int(self.nb_tasks) >= 1:  # mode 1
-            self.script_content += '#SBATCH --array=0-' + self.nb_tasks + '\n'
+                               '#SBATCH --cpus-per-task=2\n'
+                               '#SBATCH --array=0-' + self.nb_tasks + '\n')
 
         self.script_content += ('module load python/3.6\n' + 'python')
 

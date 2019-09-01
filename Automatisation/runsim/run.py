@@ -78,7 +78,7 @@ def runner(args):
             adv_parameters = arg
         elif opt in ("-s", "--scenario"):
             scenarios.append(arg)
-        elif opt in ("-i", "--iterations"):
+        elif opt in ("-i", "--task"):
             iterations = arg
         elif opt in ("-d", "--scratch_path"):
             scratch_path = arg
@@ -161,29 +161,21 @@ def runner(args):
                 return
 
     elif mode == 4:
-        def mode4():
-            config_file = "parameters_" + str(j) + ".xml"
-            output_prefix = "Results/" + scenario + "/" + str(j) + "_"
-            proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
-                                     "print.prefix=" + output_prefix + adv_parameters], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-            stdout, stderr = proc.communicate()
-            if stdout:
-                print("Scenario " + scenario + " : " + stdout.decode('utf-8'))
-            if stderr:
-                print("Scenario " + scenario + " : " + stderr.decode('utf-8'))
-
         # 1 job for all
         for scenario in scenarios:
-            if "-" in iterations:
-                it = iterations.split("-")
-                for j in range(int(it[0]), int(it[-1]) + 1):
-                    mode4()
-            else:
-                for j in range(0, int(iterations) + 1):
-                    mode4()
-        return
+            for j in range(0, int(iterations) + 1):
+                config_file = "parameters_" + str(j) + ".xml"
+                output_prefix = "Results/" + scenario + "/" + str(j) + "_"
+                proc = subprocess.Popen([schnaps, "-c", config_file, "-d", scratch_path, "-s", scenario, "-p",
+                                         "print.prefix=" + output_prefix + adv_parameters], stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                stdout, stderr = proc.communicate()
+
+                if stdout:
+                    print("Scenario " + scenario + " : " + stdout)
+                if stderr:
+                    print("Scenario " + scenario + " : " + stderr)
+                    return
 
     else:
         print("Mode unsupported (" + str(mode) + "). See the help page for more information.")

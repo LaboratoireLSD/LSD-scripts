@@ -136,7 +136,7 @@ class Launcher:
             return str(len(self.scenarios) - 1)
         else:
             # 1 job for all
-            return str(1)
+            return str(0)
 
     def add_log_parameter(self):
         # Adding the log parameter
